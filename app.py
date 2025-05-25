@@ -73,24 +73,48 @@ def detect_ingredients(image_pil, threshold=0.5):
     return detected
 
 
+def filter_recipes_by_ingredients(recipes, valid_ingredients):
+    filtered = []
+    for title, url in recipes:
+        title_lower = title.lower()
+        if any(ingredient in title_lower for ingredient in valid_ingredients):
+            filtered.append((title, url))
+    return filtered
+
+
 # --- Streamlit UI ---
-st.title("🍲 Filipino Dish Recommender using Ingredients")
+st.title("🍲 INGREDIENT SCANNER: A WEB BASED APPLICATION FOR RECOMMENDING RECIPES FOR FILIPINO DISHES")
 
 # Manual ingredient input section
-st.subheader("📝 Or manually select ingredients:")
-selected_manual_ingredients = st.multiselect(
-    "Choose ingredients from the list:", ingredient_options
+st.subheader("📝 Select ingredients:")
+
+
+def readable(label):
+    return label.replace("_", " ").title()
+
+
+# Map for display → internal value
+display_to_internal = {readable(k): k for k in ingredient_options}
+internal_to_display = {v: k for k, v in display_to_internal.items()}
+
+selected_display_ingredients = st.multiselect(
+    "Choose ingredients from the list:", list(display_to_internal.keys())
 )
+
+selected_manual_ingredients = [display_to_internal[name] for name in selected_display_ingredients]
 
 if st.button("🔍 Search Recipes with Selected Ingredients"):
     if selected_manual_ingredients:
-        recipes = search_recipes(selected_manual_ingredients)
-        if recipes:
-            st.session_state.recipes = recipes
+        search_terms = [ingredient.replace("_", " ") for ingredient in selected_manual_ingredients]
+        recipes = search_recipes(search_terms)
+        filtered_recipes = filter_recipes_by_ingredients(recipes, [term.lower() for term in search_terms])
+
+        if filtered_recipes:
+            st.session_state.recipes = filtered_recipes
             st.session_state.selected_recipe = None
             st.session_state.recipe_steps = []
         else:
-            st.warning("No recipes found. Try different ingredients.")
+            st.warning("No recipes found matching the selected ingredients.")
     else:
         st.warning("⚠️ Please select at least one ingredient.")
 
@@ -116,9 +140,9 @@ if "recipe_steps" in st.session_state and st.session_state.recipe_steps:
 st.markdown("---")
 
 # Image upload / capture & detection section
-option = st.radio("Choose image source:", ["Upload", "Capture (webcam)"])
+option = st.radio("Choose image source:", ["Upload/Capture"])
 image = None
-if option == "Upload":
+if option == "Upload/Capture":
     uploaded = st.file_uploader("Upload an image", type=["jpg", "png", "jpeg"])
     if uploaded:
         image = Image.open(uploaded).convert("RGB")
@@ -137,18 +161,18 @@ if image:
         for name, conf in detected_ingredients:
             st.markdown(f"- **{name}**: {conf:.1f}% confidence")
 
-        detected_names = [name for name, _ in detected_ingredients]
-
-        # Search recipes based on detected ingredients
+        detected_names = [name.replace("_", " ") for name, _ in detected_ingredients]
         img_recipes = search_recipes(detected_names)
-        if img_recipes:
+        filtered_img_recipes = filter_recipes_by_ingredients(img_recipes, [term.lower() for term in detected_names])
+
+        if filtered_img_recipes:
             selected_recipe_title = st.selectbox(
                 "Select a recipe to view instructions (image detection):",
-                [r[0] for r in img_recipes],
+                [r[0] for r in filtered_img_recipes],
                 key="image_recipe_select",
             )
             img_selected_recipe = next(
-                url for title, url in img_recipes if title == selected_recipe_title
+                url for title, url in filtered_img_recipes if title == selected_recipe_title
             )
             if st.button("Show Cooking Steps (image)", key="image_show_steps"):
                 steps = get_recipe_steps(img_selected_recipe)

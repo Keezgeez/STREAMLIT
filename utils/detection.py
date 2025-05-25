@@ -20,7 +20,6 @@ label_map = {
     9: "garlic",
     10: "ginger",
     11: "onions",
-    12: "onion_leaves",
     13: "pork",
     14: "potato",
     15: "tofu",
@@ -54,11 +53,11 @@ def detect_ingredients(image):
 
     detected = []
     for label, score in zip(labels, scores):
-        if score > 0.8:
+        if score > 0.01:
             label_name = label_map.get(label.item(), f"Class {label.item()}")
             confidence = score.item() * 100
             print(f"Detected: {label_name} with confidence {confidence:.1f}%")
-            # Return as tuple (ingredient, confidence)
+
             detected.append((label_name, confidence))
 
     return detected
