@@ -157,9 +157,9 @@ if image:
     detected_ingredients = detect_ingredients(image)
 
     if detected_ingredients:
-        st.write("Ingredients Detected with Confidence:")
+        st.write("Ingredients Detected: ")
         for name, conf in detected_ingredients:
-            st.markdown(f"- **{name}**: {conf:.1f}% confidence")
+            st.markdown(f"- **{name}**: {conf:.1f}%")
 
         detected_names = [name.replace("_", " ") for name, _ in detected_ingredients]
         img_recipes = search_recipes(detected_names)
@@ -167,14 +167,14 @@ if image:
 
         if filtered_img_recipes:
             selected_recipe_title = st.selectbox(
-                "Select a recipe to view instructions (image detection):",
+                "Select a recipe to view instructions:",
                 [r[0] for r in filtered_img_recipes],
                 key="image_recipe_select",
             )
             img_selected_recipe = next(
                 url for title, url in filtered_img_recipes if title == selected_recipe_title
             )
-            if st.button("Show Cooking Steps (image)", key="image_show_steps"):
+            if st.button("Show Cooking Steps", key="image_show_steps"):
                 steps = get_recipe_steps(img_selected_recipe)
                 st.subheader("👨‍🍳 Step-by-step Cooking Instructions:")
                 for i, step in enumerate(steps, 1):
